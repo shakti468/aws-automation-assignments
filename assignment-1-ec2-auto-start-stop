@@ -1,0 +1,28 @@
+import boto3
+
+def lambda_handler(event, context):
+    ec2 = boto3.resource('ec2')
+
+    # Stop instances tagged with AutoStop
+    stop_instances = ec2.instances.filter(Filters=[
+        {'Name': 'tag:Action', 'Values': ['AutoStop']},
+        {'Name': 'instance-state-name', 'Values': ['running']}
+    ])
+    stop_ids = [i.id for i in stop_instances]
+    if stop_ids:
+        ec2.instances.filter(InstanceIds=stop_ids).stop()
+        print("Stopped instances:", stop_ids)
+    else:
+        print("No instances to stop.")
+
+    # Start instances tagged with AutoStart
+    start_instances = ec2.instances.filter(Filters=[
+        {'Name': 'tag:Action', 'Values': ['AutoStart']},
+        {'Name': 'instance-state-name', 'Values': ['stopped']}
+    ])
+    start_ids = [i.id for i in start_instances]
+    if start_ids:
+        ec2.instances.filter(InstanceIds=start_ids).start()
+        print("Started instances:", start_ids)
+    else:
+        print("No instances to start.")
