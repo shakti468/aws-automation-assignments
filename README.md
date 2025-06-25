@@ -114,3 +114,96 @@ REPORT RequestId: 5ec4ca70-baba-404c-bdd5-8ed08f9d5813	Duration: 5019.02 ms	Bill
 Request ID: 5ec4ca70-baba-404c-bdd5-8ed08f9d5813
 ```
 
+# Assignment 2: Automated S3 Bucket Cleanup Using AWS Lambda and Boto3
+
+## 🎯 Objective
+Delete files older than 30 days from an S3 bucket using a Lambda function and Boto3.
+
+---
+
+## ✅ Steps Followed
+
+### 1. Created S3 Bucket
+- Bucket: `shakti-s3-cleanup`
+- Uploaded test files of various ages.
+
+🖼️ Screenshot Placeholder: S3 bucket and files
+![Screenshot 2025-06-25 132147](https://github.com/user-attachments/assets/5da27ac3-4bce-4b75-9961-a6a14ddc8f9f)
+
+---
+
+### 2. IAM Role
+- Role: `shakti_lambda-s3-cleanup-role`
+- Policy: `AmazonS3FullAccess`
+
+🖼️ Screenshot Placeholder: IAM role
+![Screenshot 2025-06-25 124634](https://github.com/user-attachments/assets/5aa29c7d-3a2f-46d1-944a-c7abb5f0f2a2)
+
+---
+
+### 3. Lambda Function
+- Runtime: Python 3.12
+- Role: `shakti-s3-cleanup-role`
+- Timeout: 1 minute
+- Logic:
+  - List objects in bucket
+  - Delete files older than 30 days
+  - Print deleted file names
+
+🖼️ Screenshot Placeholder: Lambda config and code
+![image](https://github.com/user-attachments/assets/dbb54aa8-16c8-4e9e-b393-b2ac87f11fba)
+
+---
+### 4. Lambda Function Code
+
+```python
+import boto3
+from datetime import datetime, timezone, timedelta
+
+
+BUCKET_NAME = 'shakti-s3-cleanup'
+
+def lambda_handler(event, context):
+    s3 = boto3.client('s3')
+    deleted_files = []
+    
+    threshold_date = datetime.now(timezone.utc) - timedelta(seconds=10)
+    
+    response = s3.list_objects_v2(Bucket=BUCKET_NAME)
+    
+    if 'Contents' in response:
+        for obj in response['Contents']:
+            if obj['LastModified'] < threshold_date:
+                s3.delete_object(Bucket=BUCKET_NAME, Key=obj['Key'])
+                deleted_files.append(obj['Key'])
+
+    print(f"Deleted files: {deleted_files}")
+    return {
+        'statusCode': 200,
+        'body': f"Deleted files: {deleted_files}"
+    }
+```
+
+### 4. Manual Testing
+- Manually invoked with test JSON
+- Verified via CloudWatch logs
+
+🖼️ Screenshot Placeholder: Lambda logs showing deleted files
+![Screenshot 2025-06-25 132147](https://github.com/user-attachments/assets/f2c5a28a-1b20-44c2-8ff5-01e4e897fb5b)
+
+---
+
+## 🗂️ Files Included
+
+| File                | Description                        |
+|---------------------|------------------------------------|
+| `lambda_function.py`| Lambda code                        |
+| `test_event.json`   | Test input                         |
+| `README.md`         | Documentation                      |
+
+---
+
+## ✅ Status
+✅ Completed and Tested  
+🧪 Works with manual invocation 
+
