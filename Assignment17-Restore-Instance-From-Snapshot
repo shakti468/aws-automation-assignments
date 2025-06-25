@@ -1,0 +1,76 @@
+import boto3
+import datetime
+
+ec2 = boto3.client('ec2')
+
+def lambda_handler(event, context):
+    # Replace with your volume ID
+    volume_id = 'vol-0b61481bf6349739d'
+
+    # Get latest snapshot for the volume
+    snapshots = ec2.describe_snapshots(
+        Filters=[
+            {'Name': 'volume-id', 'Values': [volume_id]},
+        ],
+        OwnerIds=['self']
+    )['Snapshots']
+
+    if not snapshots:
+        return {'status': 'No snapshots found.'}
+
+    # Get latest snapshot
+    latest_snapshot = sorted(snapshots, key=lambda x: x['StartTime'], reverse=True)[0]
+    snapshot_id = latest_snapshot['SnapshotId']
+
+    print(f"Using snapshot: {snapshot_id}")
+
+    # Create a new volume from the snapshot
+    availability_zone = 'ap-south-1a'  # Change as per your instance region
+    new_volume = ec2.create_volume(
+        SnapshotId=snapshot_id,
+        AvailabilityZone=availability_zone,
+        VolumeType='gp2',
+        TagSpecifications=[
+            {
+                'ResourceType': 'volume',
+                'Tags': [{'Key': 'Restored', 'Value': 'True'}]
+            }
+        ]
+    )
+
+    new_volume_id = new_volume['VolumeId']
+    print(f"New volume created: {new_volume_id}")
+
+    # Wait until volume is available
+    waiter = ec2.get_waiter('volume_available')
+    waiter.wait(VolumeIds=[new_volume_id])
+
+    # Launch a new EC2 instance with this volume
+    response = ec2.run_instances(
+        ImageId='ami-0f918f7e67a3323f0',  # Amazon Linux 2 AMI (adjust as needed)
+        InstanceType='t2.micro',
+        MinCount=1,
+        MaxCount=1,
+        Placement={'AvailabilityZone': availability_zone},
+        BlockDeviceMappings=[
+            {
+                'DeviceName': '/dev/xvda',
+                'Ebs': {
+                    'VolumeSize': 8,
+                    'DeleteOnTermination': True,
+                    'VolumeType': 'gp2',
+                    'SnapshotId': snapshot_id
+                }
+            }
+        ]
+    )
+
+    instance_id = response['Instances'][0]['InstanceId']
+    print(f"New EC2 Instance launched: {instance_id}")
+
+    return {
+        'status': 'Success',
+        'instance_id': instance_id,
+        'volume_id': new_volume_id,
+        'snapshot_id': snapshot_id
+    }
