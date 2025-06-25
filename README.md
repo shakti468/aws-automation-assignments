@@ -207,3 +207,67 @@ def lambda_handler(event, context):
 ✅ Completed and Tested  
 🧪 Works with manual invocation 
 
+
+---
+
+# Assignment 17: Restore EC2 Instance from Snapshot
+
+## ✅ Objective
+
+Automatically create a new EC2 instance from the latest snapshot of a specific volume using AWS Lambda and Boto3.
+
+---
+
+## 🧠 Logic Flow
+
+1. Identify the latest snapshot of a given EBS volume
+2. Create a new EBS volume from that snapshot
+3. Launch a new EC2 instance using a known AMI ID
+4. Attach the new volume to the new instance
+
+---
+
+## 🧩 Requirements
+
+- Lambda with Python 3.12 runtime
+- IAM role with `AmazonEC2FullAccess`
+- An existing volume with snapshots
+- A valid AMI ID (e.g., Amazon Linux 2)
+
+---
+
+## 🧪 Testing
+
+- Triggered manually from Lambda Console
+- Instance created: `i-06424e61e1bb35086`
+- Volume used: `vol-0bd00d1e718d373bf`
+- Snapshot used: `snap-0b2624e3f644491a4`
+
+---
+
+## 📸 Screenshots
+
+> 🖼️ Screenshot 1: Lambda logs showing snapshot and volume creation
+![image](https://github.com/user-attachments/assets/6ceec345-f822-4db3-8598-2404e11183d8)
+
+> 🖼️ Screenshot 2: New EC2 instance in running state
+![image](https://github.com/user-attachments/assets/4f4e63a2-62e5-4cd3-b634-f2b6698422b7)
+
+> 🖼️ Screenshot 3: Code
+![image](https://github.com/user-attachments/assets/166c4a35-b977-45df-9851-d41ac89453fc)
+
+> 🖼️ Screenshot 3: Test
+![image](https://github.com/user-attachments/assets/d37c0707-a00d-4a94-b179-1f755d120298)
+
+---
+
+## 🧼 Cleanup
+
+- ✅ Terminate unused instances to save cost
+- ✅ Optionally delete the volume created
+
+---
+
+## 📁 Files
+
+- `lambda_function.py`: Boto3 script to restore from snapshot
